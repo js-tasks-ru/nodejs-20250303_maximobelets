@@ -41,7 +41,7 @@ export class TasksService {
     page?: number,
     limit?: number,
   ): Task[] {
-    if ((page && (isNaN(page) || page <= 0)) || (limit && (isNaN(limit) && limit <= 0))) {
+    if ((page && (isNaN(page) || page <= 0)) || (limit && (isNaN(limit) || limit <= 0))) {
       throw new BadRequestException('Something bad happened', {
         cause: new Error(),
         description: 'Some error description',

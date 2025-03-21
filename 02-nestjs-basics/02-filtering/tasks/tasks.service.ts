@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Task, TaskStatus } from "./task.model";
 
 @Injectable()
@@ -40,5 +40,31 @@ export class TasksService {
     status?: TaskStatus,
     page?: number,
     limit?: number,
-  ): Task[] {}
+  ): Task[] {
+    if ((page && (isNaN(page) || page <= 0)) || (limit && (isNaN(limit) || limit <= 0))) {
+      throw new BadRequestException('Something bad happened', {
+        cause: new Error(),
+        description: 'Some error description',
+      });
+    }
+
+    if (this.tasks.length === 0) {
+      throw new NotFoundException('No tasks')
+    }
+
+    const filteredTasks: Task[] = status ? 
+      this.tasks.filter((task: Task) => task.status === status)
+      : this.tasks;
+    // 10 items, (5, 1) =>
+    if (limit && page) {
+      const pages: number = Math.ceil(filteredTasks.length / limit);
+      const startPage: number = (page - 1) * limit;
+
+      if (page > pages) return [];
+
+      return filteredTasks.slice(0, startPage + limit)
+    }
+
+    return filteredTasks;
+  }
 }

@@ -1,16 +1,54 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { CreateTaskDto } from "./dto/create-task.dto";
 import { UpdateTaskDto } from "./dto/update-task.dto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Task } from "./entities/task.entity";
+import { DeleteResult, Repository } from "typeorm";
 
 @Injectable()
 export class TasksService {
-  create(createTaskDto: CreateTaskDto) {}
+  constructor(
+    @InjectRepository(Task)
+    private taskRepository: Repository<Task>
+  ) {}
 
-  async findAll() {}
+  async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    const task = new Task();
 
-  async findOne(id: number) {}
+    task.title = createTaskDto.title;
+    task.description = createTaskDto.description;
+    task.isCompleted = createTaskDto.isCompleted;
 
-  async update(id: number, updateTaskDto: UpdateTaskDto) {}
+    await this.taskRepository.save(task)
 
-  async remove(id: number): Promise<void> {}
+    return task;
+  }
+
+  findAll(): Promise<Task[]> {
+    return this.taskRepository.find()
+  }
+
+  async findOne(id: number): Promise<Task> {
+    const task = await this.taskRepository.findOne({ where: { id } });
+
+    if (!task) throw new NotFoundException('Task by represented id was not found');
+
+    return task;
+  }
+
+  async update(id: number, updateTaskDto: UpdateTaskDto): Promise<Task> {
+    const task = await this.taskRepository.update(id, updateTaskDto)
+
+    if (!task) throw new NotFoundException('Task by represented id was not found');
+
+    return this.findOne(id)
+  }
+
+  async remove(id: number): Promise<void> {
+    const takById = await this.findOne(id)
+    
+    await this.taskRepository.delete(id);
+
+    if (!takById) throw new NotFoundException('Task by represented id was not found');
+  }
 }
